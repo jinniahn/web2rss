@@ -1,0 +1,98 @@
+* 대상 사이트
+** 교보문고
+   - http://www.kyobobook.co.kr/category/categoryKor.laf?linkClass=33&mallGb=KOR&orderClick=da2&tabName=NewBook&targetPage=1
+
+*** 데이터 가져오기
+
+   #+begin_src python :results output silent :dir data :exports both 
+     import requests
+     url = 'http://www.kyobobook.co.kr/category/newCategoryBookKorList.laf?linkClass=33&mallGb=KOR&orderClick=da2&tabName=NewBook&targetPage=1'
+     req = requests.get(url)
+     html = req.text
+     with open('list.html', 'w', encoding='utf-8') as f:
+         f.write(html)
+   #+end_src
+
+*** 목록 분석
+
+    - pyquery: http://pyquery.readthedocs.io/en/latest/api.html
+    - element: https://docs.python.org/3.5/library/xml.etree.elementtree.html#element-objects
+    - HtmlElement: http://lxml.de/api/lxml.html.HtmlElement-class.html
+      - pyquery에서 찾은 Element는 lxml의 HtmlElement object이다 
+      - getparent()
+
+    #+begin_src python :results output replace :dir data :exports both
+      from pprint import pprint
+      with open('list.html', 'r') as f: html = f.read()
+      from pyquery import PyQuery as pq
+      h = pq(html)
+
+      curpage = 1
+      books = h('#detailList tr')
+      is_exists_nextpage = h('.paging_num img[alt="다음 페이지로 이동"]')[0].getparent().tag == a
+      if(is_exists_nextpage):
+          nextpage = curpage + 1
+      
+      print(next_link)
+      exit(0)
+      book_list = []
+      for book in books:
+          book = pq(book)
+
+          item = {}
+
+          item["barcode"] = book('input[name="barcode"]')[0].attrib["value"]
+          item["title"]   = book('dl.book_title dt a strong')[0].text
+          
+          d = book('dl.book_title dd')[0].text_content().replace("\t","").replace("\n","").replace("\xa0","").replace(" ","").split("|")
+          item["author"]  = d[:-2]
+          item["publisher"] = d[-2]
+          item["pubDate"] = d[-1]
+          item["description"] = book('dd.info')[0].text_content().replace("\t","").replace("\n","")
+          item["image"] = book('.book_image img')[0].attrib['src']
+          item["link"] = "http://www.kyobobook.co.kr/product/detailViewKor.laf?barcode=" + item['barcode']
+
+          book_list.append(item)
+          pprint(item)
+
+      #pprint(len(wordbook))
+
+
+    #+end_src
+
+    #+RESULTS:
+    : a
+
+
+
+
+
+
+
+
+
+
+
+
+* RSS 생성
+
+  - [[https://github.com/lkiesow/python-feedgen][feed gen]]
+
+** 필요한 항목
+
+    - id       책번호
+    - title    제목
+    - author   저자1, 저자2, 저자3
+      - name 
+      - email
+    - link     책 상세 정보 링크
+    - logo     책 사진
+    - subtitle  X
+    - language  ko
+    - description   책 상세
+    - category  컴퓨터/IT
+    - pubDate   출판일
+
+
+
+
